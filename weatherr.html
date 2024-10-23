@@ -61,12 +61,19 @@
         // Cell coverage data from your geojson file on GitHub
         var cellCoverageUrl = 'https://bencole123.github.io/mapbox-test/cellcoverage.geojson';
 
+        // Helper function to remove any existing layers
+        function removeExistingLayers(layerId) {
+            if (map.getLayer(layerId)) {
+                map.removeLayer(layerId);
+            }
+            if (map.getSource(layerId)) {
+                map.removeSource(layerId);
+            }
+        }
+
         // Function to add a weather layer
         function addWeatherLayer(layer) {
-            if (map.getLayer('weather-layer')) {
-                map.removeLayer('weather-layer');
-                map.removeSource('weather');
-            }
+            removeExistingLayers('weather-layer');
             map.addSource('weather', {
                 'type': 'raster',
                 'tiles': [weatherLayers[layer]],
@@ -83,4 +90,49 @@
         }
 
         // Function to add the fire layer
-       
+        function addFireLayer() {
+            removeExistingLayers('fire-layer');
+            map.addSource('fire', {
+                'type': 'raster',
+                'tiles': [fireLayer],
+                'tileSize': 256
+            });
+            map.addLayer({
+                'id': 'fire-layer',
+                'type': 'raster',
+                'source': 'fire',
+                'paint': {
+                    'raster-opacity': 0.8
+                }
+            });
+        }
+
+        // Function to add the cell coverage layer
+        function addCellCoverageLayer() {
+            removeExistingLayers('cell-coverage-layer');
+            map.addSource('cell-coverage', {
+                'type': 'geojson',
+                'data': cellCoverageUrl
+            });
+            map.addLayer({
+                'id': 'cell-coverage-layer',
+                'type': 'fill',
+                'source': 'cell-coverage',
+                'paint': {
+                    'fill-color': '#008000',
+                    'fill-opacity': 0.5
+                }
+            });
+        }
+
+        // Event listeners for buttons to switch layers
+        document.getElementById('temp').onclick = function () { addWeatherLayer('temperature'); };
+        document.getElementById('precipitation').onclick = function () { addWeatherLayer('precipitation'); };
+        document.getElementById('clouds').onclick = function () { addWeatherLayer('clouds'); };
+        document.getElementById('wind').onclick = function () { addWeatherLayer('wind'); };
+        document.getElementById('fire').onclick = addFireLayer;
+        document.getElementById('cell').onclick = addCellCoverageLayer;
+
+    </script>
+</body>
+</html>
