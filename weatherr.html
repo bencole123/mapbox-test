@@ -23,11 +23,6 @@
 <body>
     <div id="map"></div>
 
-    <!-- Simple menu to switch layers -->
-    <div class="menu">
-        <button id="windSpeed">Wind Speed</button>
-    </div>
-
     <script>
         // Mapbox token (already included)
         mapboxgl.accessToken = 'pk.eyJ1IjoiaW5uZXJjYWJiYWdlIiwiYSI6ImNtMmdpY3hhYzAxaXUybG40YWJsbm96cXQifQ.7nXQSw91Vd8WhZEfuiwSNA';
@@ -40,7 +35,10 @@
             zoom: 2          // Zoom level
         });
 
-        // OpenWeatherMap API Key (already included)
+        // Just to make sure Mapbox is loading properly
+        console.log('Mapbox is loaded');
+
+        // OpenWeatherMap API Key
         var weatherApiKey = '455df0b333d799c61f8892574dd2f210';
 
         // Define the URL for wind speed layer
@@ -48,30 +46,16 @@
 
         // Function to add wind speed layer
         function addWindSpeedLayer() {
-            if (map.getLayer('wind-speed-layer')) {
-                map.removeLayer('wind-speed-layer');
-                map.removeSource('wind-speed');
-            } else {
-                map.addSource('wind-speed', {
-                    'type': 'raster',
-                    'tiles': [windSpeedLayer],
-                    'tileSize': 256
-                });
+            console.log('Adding wind speed layer...');
+            map.addSource('wind-speed', {
+                'type': 'raster',
+                'tiles': [windSpeedLayer],
+                'tileSize': 256
+            });
 
-                map.addLayer({
-                    'id': 'wind-speed-layer',
-                    'type': 'raster',
-                    'source': 'wind-speed',
-                    'paint': {
-                        'raster-opacity': 0.8
-                    }
-                });
-            }
-        }
-
-        // Add event listener for Wind Speed button
-        document.getElementById('windSpeed').onclick = addWindSpeedLayer;
-
-    </script>
-</body>
-</html>
+            map.addLayer({
+                'id': 'wind-speed-layer',
+                'type': 'raster',
+                'source': 'wind-speed',
+                'paint': {
+                    'raster-opacity':
