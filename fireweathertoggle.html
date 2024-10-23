@@ -23,7 +23,7 @@
 <body>
     <div id="map"></div>
 
-    <!-- Simple menu to switch weather layers -->
+    <!-- Simple menu to switch layers -->
     <div class="menu">
         <button id="temp">Temperature</button>
         <button id="precipitation">Precipitation</button>
@@ -34,7 +34,7 @@
     </div>
 
     <script>
-        // Your Mapbox token
+        // Mapbox token
         mapboxgl.accessToken = 'pk.eyJ1IjoiaW5uZXJjYWJiYWdlIiwiYSI6ImNtMmdpY3hhYzAxaXUybG40YWJsbm96cXQifQ.7nXQSw91Vd8WhZEfuiwSNA';
 
         // Create Mapbox map
@@ -72,11 +72,9 @@
                 activeLayers['weather-layer'] = null;
             }
 
-            // Add the new weather layer if it's not already active
-            if (activeLayers['weather-layer'] !== layer) {
-                addWeatherLayer(layer);
-                activeLayers['weather-layer'] = layer;
-            }
+            // Add the new weather layer
+            addWeatherLayer(layer);
+            activeLayers['weather-layer'] = layer;
         }
 
         // Function to add weather layer
