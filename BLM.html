@@ -2,12 +2,10 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Mapbox with BLM Boundaries</title>
+    <title>Mapbox with Wind Speed Layer</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
     <script src='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css' rel='stylesheet' />
-    <script src="https://unpkg.com/terraformer@1.0.9"></script>
-    <script src="https://unpkg.com/terraformer-arcgis-parser@1.0.5"></script>
     <style>
         body { margin: 0; padding: 0; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
@@ -27,7 +25,7 @@
 
     <!-- Simple menu to switch layers -->
     <div class="menu">
-        <button id="blmBoundaries">BLM Boundaries</button>
+        <button id="windSpeed">Wind Speed</button>
     </div>
 
     <script>
@@ -42,36 +40,37 @@
             zoom: 2          // Zoom level
         });
 
-        // Function to fetch BLM Boundaries from ArcGIS REST service and add to Mapbox
-        async function addBLMBoundariesLayer() {
-            const arcgisUrl = 'https://gis.blm.gov/arcgis/rest/services/admin_boundaries/BLM_Natl_AdminUnit/MapServer/0/query?where=1%3D1&outFields=*&f=geojson';
+        // OpenWeatherMap API Key (already included)
+        var weatherApiKey = '455df0b333d799c61f8892574dd2f210';
 
-            try {
-                const response = await fetch(arcgisUrl);
-                const data = await response.json();
+        // Define the URL for wind speed layer
+        var windSpeedLayer = `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`;
 
-                // Add BLM Boundaries layer to the map
-                map.addSource('blm-boundaries', {
-                    'type': 'geojson',
-                    'data': data
+        // Function to add wind speed layer
+        function addWindSpeedLayer() {
+            if (map.getLayer('wind-speed-layer')) {
+                map.removeLayer('wind-speed-layer');
+                map.removeSource('wind-speed');
+            } else {
+                map.addSource('wind-speed', {
+                    'type': 'raster',
+                    'tiles': [windSpeedLayer],
+                    'tileSize': 256
                 });
 
                 map.addLayer({
-                    'id': 'blm-boundaries-layer',
-                    'type': 'fill',
-                    'source': 'blm-boundaries',
+                    'id': 'wind-speed-layer',
+                    'type': 'raster',
+                    'source': 'wind-speed',
                     'paint': {
-                        'fill-color': '#006400', // Dark green
-                        'fill-opacity': 0.5
+                        'raster-opacity': 0.8
                     }
                 });
-            } catch (error) {
-                console.error('Error fetching BLM boundaries:', error);
             }
         }
 
-        // Add event listener to BLM Boundaries button
-        document.getElementById('blmBoundaries').onclick = addBLMBoundariesLayer;
+        // Add event listener for Wind Speed button
+        document.getElementById('windSpeed').onclick = addWindSpeedLayer;
 
     </script>
 </body>
