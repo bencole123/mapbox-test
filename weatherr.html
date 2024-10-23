@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Mapbox with Wind Speed Layer</title>
+    <title>Mapbox with Multiple Layers</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
     <script src='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css' rel='stylesheet' />
@@ -23,8 +23,18 @@
 <body>
     <div id="map"></div>
 
+    <!-- Simple menu to switch layers -->
+    <div class="menu">
+        <button id="temp">Temperature</button>
+        <button id="precipitation">Precipitation</button>
+        <button id="clouds">Clouds</button>
+        <button id="wind">Wind</button>
+        <button id="fire">Fire</button>
+        <button id="cell">Cell Coverage</button>
+    </div>
+
     <script>
-        // Mapbox token (already included)
+        // Mapbox token
         mapboxgl.accessToken = 'pk.eyJ1IjoiaW5uZXJjYWJiYWdlIiwiYSI6ImNtMmdpY3hhYzAxaXUybG40YWJsbm96cXQifQ.7nXQSw91Vd8WhZEfuiwSNA';
 
         // Create Mapbox map
@@ -35,27 +45,42 @@
             zoom: 2          // Zoom level
         });
 
-        // Just to make sure Mapbox is loading properly
-        console.log('Mapbox is loaded');
-
         // OpenWeatherMap API Key
         var weatherApiKey = '455df0b333d799c61f8892574dd2f210';
 
-        // Define the URL for wind speed layer
-        var windSpeedLayer = `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`;
+        // Define URLs for various layers
+        var weatherLayers = {
+            'temperature': `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+            'precipitation': `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+            'clouds': `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+            'wind': `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`
+        };
 
-        // Function to add wind speed layer
-        function addWindSpeedLayer() {
-            console.log('Adding wind speed layer...');
-            map.addSource('wind-speed', {
+        var fireLayer = `https://firms.modaps.eosdis.nasa.gov/wmts/viirs/SNPP_NRT/default/{Time}/{TileMatrixSet}/{z}/{x}/{y}.png`;
+
+        // Cell coverage data from your geojson file on GitHub
+        var cellCoverageUrl = 'https://bencole123.github.io/mapbox-test/cellcoverage.geojson';
+
+        // Function to add a weather layer
+        function addWeatherLayer(layer) {
+            if (map.getLayer('weather-layer')) {
+                map.removeLayer('weather-layer');
+                map.removeSource('weather');
+            }
+            map.addSource('weather', {
                 'type': 'raster',
-                'tiles': [windSpeedLayer],
+                'tiles': [weatherLayers[layer]],
                 'tileSize': 256
             });
-
             map.addLayer({
-                'id': 'wind-speed-layer',
+                'id': 'weather-layer',
                 'type': 'raster',
-                'source': 'wind-speed',
+                'source': 'weather',
                 'paint': {
-                    'raster-opacity':
+                    'raster-opacity': 0.8
+                }
+            });
+        }
+
+        // Function to add the fire layer
+       
