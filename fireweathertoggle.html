@@ -58,26 +58,24 @@
 
         // Track the visibility of each layer
         var activeLayers = {
-            'weather-layer': false,
+            'weather-layer': null,
             'wildfire-layer': false,
             'cell-coverage-layer': false
         };
 
-        // Add the initial temperature layer as default
-        map.on('load', function () {
-            addWeatherLayer('temperature');
-        });
-
-        // Function to toggle weather layer
+        // Function to toggle weather layers
         function toggleWeatherLayer(layer) {
-            // Remove the current weather layer if it's active
+            // Remove the current weather layer if one exists
             if (activeLayers['weather-layer']) {
                 map.removeLayer('weather-layer');
                 map.removeSource('weather');
-                activeLayers['weather-layer'] = false;
-            } else {
+                activeLayers['weather-layer'] = null;
+            }
+
+            // Add the new weather layer if it's not already active
+            if (activeLayers['weather-layer'] !== layer) {
                 addWeatherLayer(layer);
-                activeLayers['weather-layer'] = true;
+                activeLayers['weather-layer'] = layer;
             }
         }
 
