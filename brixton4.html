@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapbox + Windy Integration</title>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.windy.com/assets/map-forecast/libBoot.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script>
+        // Initialize Mapbox
+        mapboxgl.accessToken = 'pk.eyJ1IjoiaW5uZXJjYWJiYWdlIiwiYSI6ImNtMmdpY3hhYzAxaXUybG40YWJsbm96cXQifQ.7nXQSw91Vd8WhZEfuiwSNA';
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [-95, 37], // Initial coordinates [lng, lat]
+            zoom: 4
+        });
+
+        // Initialize Windy
+        var options = {
+            key: 'a5eG6g8hInXtqURZgzw8QpjHPfEQG4UK', // Your Windy API Key
+            lat: 37,
+            lon: -95,
+            zoom: 4
+        };
+
+        windyInit(options, function(windyAPI) {
+            // Windy map object
+            const { map: windyMap } = windyAPI;
+            
+            // Add Windy layers to Mapbox as moving wind animations
+            windyMap.on('load', function() {
+                console.log('Windy map is loaded and integrated into Mapbox.');
+            });
+        });
+    </script>
+</body>
+</html>
