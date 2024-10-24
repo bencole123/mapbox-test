@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Mapbox with Weather, Cell Coverage, and USDA Forest Layer</title>
+    <title>Mapbox with USFS Layer</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
     <script src='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css' rel='stylesheet' />
@@ -23,15 +23,9 @@
 <body>
     <div id="map"></div>
 
-    <!-- Simple menu to switch layers -->
+    <!-- Simple menu to add USFS layer -->
     <div class="menu">
-        <button id="temp">Temperature</button>
-        <button id="precipitation">Precipitation</button>
-        <button id="clouds">Clouds</button>
-        <button id="wind">Wind</button>
-        <button id="wildfire">Wildfire</button>
-        <button id="cellCoverage">Cell Coverage</button>
-        <button id="usfs">USFS Forest Boundaries</button> <!-- New button for USFS -->
+        <button id="usfs">Toggle USFS Boundaries</button>
     </div>
 
     <script>
@@ -42,14 +36,14 @@
         var map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v11',
-            center: [0, 0],  // Longitude and latitude
-            zoom: 2          // Zoom level
+            center: [-100, 40],  // Initial center point [longitude, latitude]
+            zoom: 3              // Initial zoom level
         });
 
-        // Function to add USDA Forest System Boundaries layer
-        function addUSFSLayer() {
-            if (map.getLayer('usfs-layer')) {
-                map.removeLayer('usfs-layer');
+        // Function to toggle USDA Forest System Boundaries
+        function toggleUSFSLayer() {
+            if (map.getLayer('usfs-boundaries')) {
+                map.removeLayer('usfs-boundaries');
                 map.removeSource('usfs-boundaries');
             } else {
                 map.addSource('usfs-boundaries', {
@@ -59,7 +53,7 @@
                 });
 
                 map.addLayer({
-                    id: 'usfs-layer',
+                    id: 'usfs-boundaries',
                     type: 'raster',
                     source: 'usfs-boundaries',
                     paint: { 'raster-opacity': 0.8 }
@@ -67,15 +61,8 @@
             }
         }
 
-        // Event listeners for buttons to switch layers
-        document.getElementById('temp').onclick = function () { toggleWeatherLayer('temperature'); };
-        document.getElementById('precipitation').onclick = function () { toggleWeatherLayer('precipitation'); };
-        document.getElementById('clouds').onclick = function () { toggleWeatherLayer('clouds'); };
-        document.getElementById('wind').onclick = function () { toggleWeatherLayer('wind'); };
-        document.getElementById('wildfire').onclick = toggleWildfireLayer;
-        document.getElementById('cellCoverage').onclick = toggleCellCoverageLayer;
-        document.getElementById('usfs').onclick = addUSFSLayer; // Add USDA Forest System Boundaries
-
+        // Event listener for button to toggle USFS boundaries
+        document.getElementById('usfs').onclick = toggleUSFSLayer;
     </script>
 </body>
 </html>
