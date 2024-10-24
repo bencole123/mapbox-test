@@ -42,8 +42,8 @@
         var map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v11',
-            center: [0, 0],  // Longitude and latitude
-            zoom: 2          // Zoom level
+            center: [-100, 40],  // Adjusted center for better initial visibility
+            zoom: 4          // Zoom level
         });
 
         // OpenWeatherMap API Key
@@ -90,6 +90,7 @@
             });
         }
 
+        // Function to toggle wildfire data
         function toggleWildfireLayer() {
             if (activeLayers['wildfire-layer']) {
                 map.removeLayer('wildfire-layer');
@@ -174,4 +175,36 @@
                 activeLayers['usfs-boundaries-layer'] = false;
             } else {
                 addUSFSLayer();
-                activeLayers['usfs-bound
+                activeLayers['usfs-boundaries-layer'] = true;
+            }
+        }
+
+        function addUSFSLayer() {
+            map.addSource('usfs-boundaries', {
+                'type': 'raster',
+                'tiles': [
+                    'https://apps.fs.usda.gov/arcx/services/EDW/EDW_ForestSystemBoundaries_01/MapServer/WMSServer?service=WMS&request=GetMap&version=1.1.1&layers=1&styles=&format=image/png&srs=EPSG:3857&bbox={bbox-epsg-3857}&width=256&height=256'
+                ],
+                'tileSize': 256
+            });
+
+            map.addLayer({
+                'id': 'usfs-boundaries-layer',
+                'type': 'raster',
+                'source': 'usfs-boundaries',
+                'paint': { 'raster-opacity': 0.8 }
+            });
+        }
+
+        // Event listeners for buttons to switch layers
+        document.getElementById('temp').onclick = function () { toggleWeatherLayer('temperature'); };
+        document.getElementById('precipitation').onclick = function () { toggleWeatherLayer('precipitation'); };
+        document.getElementById('clouds').onclick = function () { toggleWeatherLayer('clouds'); };
+        document.getElementById('wind').onclick = function () { toggleWeatherLayer('wind'); };
+        document.getElementById('wildfire').onclick = toggleWildfireLayer;
+        document.getElementById('cellCoverage').onclick = toggleCellCoverageLayer;
+        document.getElementById('usfsLayer').onclick = toggleUSFSLayer;
+
+    </script>
+</body>
+</html>
