@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Mapbox with Weather, Cell Coverage, Wildfire, USFS, and BLM Layers</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        .menu {
+            position: absolute;
+            background: white;
+            padding: 10px;
+            font-family: 'Arial';
+            z-index: 1;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <!-- Simple menu to switch layers -->
+    <div class="menu">
+        <button id="temp">Temperature</button>
+        <button id="precipitation">Precipitation</button>
+        <button id="clouds">Clouds</button>
+        <button id="wind">Wind</button>
+        <button id="wildfire">Wildfire</button>
+        <button id="cellCoverage">Cell Coverage</button>
+        <button id="usfsLayer">USFS Boundaries</button>
+        <button id="blmLayer">BLM Boundaries</button>
+    </div>
+
+    <script>
+        // Mapbox token
+        mapboxgl.accessToken = 'pk.eyJ1IjoiaW5uZXJjYWJiYWdlIiwiYSI6ImNtMmdpY3hhYzAxaXUybG40YWJsbm96cXQifQ.7nXQSw91Vd8WhZEfuiwSNA';
+
+        // Create Mapbox map
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [-100, 40],  // Adjusted center for better initial visibility
+            zoom: 4          // Zoom level
+        });
+
+        // Define URLs for weather layers
+        var weatherLayers = {
+            'temperature': `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=YOUR_API_KEY`,
+            'precipitation': `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=YOUR_API_KEY`,
+            'clouds': `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=YOUR_API_KEY`,
+            'wind': `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=YOUR_API_KEY`
+        };
+
+        // Track the visibility of each layer
+        var activeLayers = {
+            'weather-layer': null,
+            'wildfire-layer': false,
+            'cell-coverage-layer': false,
+            'usfs-boundaries-layer': false,
+            'blm-boundaries-layer': false
+        };
+
+        // Function to toggle weather layers
+        function toggleWeatherLayer(layer) {
+            if (activeLayers['weather-layer']) {
+                map.removeLayer('weather-layer');
+                map.removeSource('weather');
+                activeLayers['weather-layer'] = null;
+            }
+            addWeatherLayer(layer);
+            activeLayers['weather-layer'] = layer;
+        }
+
+        function addWeatherLayer(layer) {
+            map.addSource('weather', {
+                'type': 'raster',
+                'tiles': [weatherLayers[layer]],
+                'tileSize': 256
+            });
+            map.addLayer({
+                'id': 'weather-layer',
+                'type': 'raster',
+                'source': 'weather',
+                'paint': { 'raster-opacity': 0.8 }
+            });
+        }
+
+        // Function to toggle BLM boundaries layer
+        function toggleBLMLayer() {
+            if (activeLayers['blm-boundaries-layer']) {
+                map.removeLayer('blm-boundaries-layer');
+                map.removeSource('blm-boundaries');
+                activeLayers['blm-boundaries-layer'] = false;
+            } else {
+                addBLMLayer();
+                activeLayers['blm-boundaries-layer'] = true;
+            }
+        }
+
+        function addBLMLayer() {
+            map.addSource('blm-boundaries', {
+                'type': 'raster',
+                'tiles': [
+                    'https://gis.blm.gov/arcgis/services/admin_boundaries/BLM_Natl_AdminUnit_Generalized/MapServer/WMSServer?service=WMS&request=GetMap&version=1.1.1&layers=3&styles=&format=image/png&srs=EPSG:3857&bbox={bbox-epsg-3857}&width=256&height=256'
+                ],
+                'tileSize': 256
+            });
+
+            map.addLayer({
+                'id': 'blm-boundaries-layer',
+                'type': 'raster',
+                'source': 'blm-boundaries',
+                'paint': { 'raster-opacity': 0.8 }
+            });
+        }
+
+        // Event listeners for buttons to switch layers
+        document.getElementById('temp').onclick = function () { toggleWeatherLayer('temperature'); };
+        document.getElementById('precipitation').onclick = function () { toggleWeatherLayer('precipitation'); };
+        document.getElementById('clouds').onclick = function () { toggleWeatherLayer('clouds'); };
+        document.getElementById('wind').onclick = function () { toggleWeatherLayer('wind'); };
+        document.getElementById('wildfire').onclick = toggleWildfireLayer;
+        document.getElementById('cellCoverage').onclick = toggleCellCoverageLayer;
+        document.getElementById('usfsLayer').onclick = toggleUSFSLayer;
+        document.getElementById('blmLayer').onclick = toggleBLMLayer;
+
+    </script>
+</body>
+</html>
