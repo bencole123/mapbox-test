@@ -2,67 +2,49 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Mapbox with USFS Layer</title>
+    <title>Mapbox with WMS Layer</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
     <script src='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css' rel='stylesheet' />
     <style>
         body { margin: 0; padding: 0; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-        .menu {
-            position: absolute;
-            background: white;
-            padding: 10px;
-            font-family: 'Arial';
-            z-index: 1;
-            top: 10px;
-            right: 10px;
-        }
     </style>
 </head>
 <body>
     <div id="map"></div>
 
-    <!-- Simple menu to add USFS layer -->
-    <div class="menu">
-        <button id="usfs">Toggle USFS Boundaries</button>
-    </div>
-
     <script>
-        // Mapbox token
-        mapboxgl.accessToken = 'pk.eyJ1IjoiaW5uZXJjYWJiYWdlIiwiYSI6ImNtMmdpY3hhYzAxaXUybG40YWJsbm96cXQifQ.7nXQSw91Vd8WhZEfuiwSNA';
+        // Your Mapbox access token
+        mapboxgl.accessToken = 'your_mapbox_access_token';  // Replace with your Mapbox token
 
-        // Create Mapbox map
+        // Initialize Mapbox map
         var map = new mapboxgl.Map({
             container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v11',
-            center: [-100, 40],  // Initial center point [longitude, latitude]
-            zoom: 3              // Initial zoom level
+            style: 'mapbox://styles/mapbox/streets-v11',  // Map style
+            center: [-100, 40],  // Center of the map [lng, lat]
+            zoom: 3  // Zoom level
         });
 
-        // Function to toggle USDA Forest System Boundaries
-        function toggleUSFSLayer() {
-            if (map.getLayer('usfs-boundaries')) {
-                map.removeLayer('usfs-boundaries');
-                map.removeSource('usfs-boundaries');
-            } else {
-                map.addSource('usfs-boundaries', {
-                    type: 'raster',
-                    tiles: ['https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_ForestSystemBoundaries_01/MapServer/tile/{z}/{y}/{x}'],
-                    tileSize: 256
-                });
+        // Add the WMS layer (USFS Forest Boundaries) as a raster source
+        map.on('load', function () {
+            map.addSource('usfs-boundaries', {
+                'type': 'raster',
+                'tiles': [
+                    'https://apps.fs.usda.gov/arcx/services/EDW/EDW_ForestSystemBoundaries_01/MapServer/WMSServer?service=WMS&request=GetMap&version=1.1.1&layers=1&styles=&format=image/png&srs=EPSG:3857&bbox={bbox-epsg-3857}&width=256&height=256'
+                ],
+                'tileSize': 256
+            });
 
-                map.addLayer({
-                    id: 'usfs-boundaries',
-                    type: 'raster',
-                    source: 'usfs-boundaries',
-                    paint: { 'raster-opacity': 0.8 }
-                });
-            }
-        }
-
-        // Event listener for button to toggle USFS boundaries
-        document.getElementById('usfs').onclick = toggleUSFSLayer;
+            map.addLayer({
+                'id': 'usfs-boundaries-layer',
+                'type': 'raster',
+                'source': 'usfs-boundaries',
+                'paint': {
+                    'raster-opacity': 0.8
+                }
+            });
+        });
     </script>
 </body>
 </html>
