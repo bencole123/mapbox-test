@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Mapbox with GeoJSON from Google Drive</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        // Your Mapbox access token
+        mapboxgl.accessToken = 'pk.eyJ1IjoiaW5uZXJjYWJiYWdlIiwiYSI6ImNtMmdpY3hhYzAxaXUybG40YWJsbm96cXQifQ.7nXQSw91Vd8WhZEfuiwSNA';
+
+        // Create the Mapbox map
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [-100.04, 38.907],
+            zoom: 3
+        });
+
+        // Function to fetch the GeoJSON from Google Drive
+        async function fetchGeoJSON() {
+            const response = await fetch('https://drive.google.com/uc?export=download&id=1pn15dpltvxqxYqa8piilQ8mAK-r6ApQo');
+            const geojson = await response.json();
+            return geojson;
+        }
+
+        // Load the GeoJSON and add it to the map
+        map.on('load', async function () {
+            const geojson = await fetchGeoJSON();
+
+            // Add the GeoJSON as a source
+            map.addSource('geojson-data', {
+                'type': 'geojson',
+                'data': geojson
+            });
+
+            // Add a layer to display the GeoJSON
+            map.addLayer({
+                'id': 'geojson-layer',
+                'type': 'fill',
+                'source': 'geojson-data',
+                'layout': {},
+                'paint': {
+                    'fill-color': '#088',
+                    'fill-opacity': 0.8
+                }
+            });
+        });
+    </script>
+</body>
+</html>
