@@ -1,15 +1,3 @@
-If you’re seeing just a blank map and buttons but no layers, it sounds like the layers aren’t being properly added or displayed. Let’s troubleshoot by focusing on a couple of key points.
-
-	1.	Make sure the layer sources are being added correctly – the BLM WMS, USFS WMS, and other weather and coverage layers.
-	2.	Check the map style – Make sure that the Mapbox style URL and tokens are correct and that layers are correctly referencing them.
-
-Key adjustments:
-
-	•	Reconfirm the WMS URL format and ensure tiles are being loaded correctly.
-	•	Add some logging to see if the layers are actually being added or not.
-
-Here’s an updated version that adds logging and ensures proper loading of all layers.
-
 <!DOCTYPE html>
 <html>
 <head>
