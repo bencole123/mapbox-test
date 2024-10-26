@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Mapbox with USFS Layer</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        .menu {
+            position: absolute;
+            background: white;
+            padding: 10px;
+            font-family: 'Arial';
+            z-index: 1;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <!-- Button to toggle USFS layer -->
+    <div class="menu">
+        <button id="usfsLands">USFS Lands</button>
+    </div>
+
+    <script>
+        // Mapbox token
+        mapboxgl.accessToken = 'pk.eyJ1IjoiaW5uZXJjYWJiYWdlIiwiYSI6ImNtMmdpY3hhYzAxaXUybG40YWJsbm96cXQifQ.7nXQSw91Vd8WhZEfuiwSNA';
+
+        // Initialize Mapbox map
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [0, 0],
+            zoom: 2
+        });
+
+        // USFS JSON file URL
+        var usfsGeoJSON = 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/USFS.json';
+
+        // Function to toggle the USFS layer
+        function toggleUSFSLandsLayer() {
+            if (map.getLayer('usfs-lands-layer')) {
+                map.removeLayer('usfs-lands-layer');
+                map.removeSource('usfs-lands');
+            } else {
+                map.addSource('usfs-lands', {
+                    'type': 'geojson',
+                    'data': usfsGeoJSON
+                });
+                map.addLayer({
+                    'id': 'usfs-lands-layer',
+                    'type': 'fill',
+                    'source': 'usfs-lands',
+                    'paint': {
+                        'fill-color': '#228B22', // Green color for USFS lands
+                        'fill-opacity': 0.4
+                    }
+                });
+            }
+        }
+
+        // Add event listener for USFS button
+        document.getElementById('usfsLands').onclick = toggleUSFSLandsLayer;
+    </script>
+</body>
+</html>
