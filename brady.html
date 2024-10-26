@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Mapbox with Weather, Precipitation, and Air Quality Layers</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        .menu {
+            position: absolute;
+            background: white;
+            padding: 10px;
+            font-family: 'Arial';
+            z-index: 1;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <!-- Simple menu to switch layers -->
+    <div class="menu">
+        <button id="temp">Temperature</button>
+        <button id="precipitation">Precipitation</button>
+        <button id="toggleAQI">Air Quality</button> <!-- Button for Air Quality layer -->
+    </div>
+
+    <script>
+        // Mapbox token
+        mapboxgl.accessToken = 'pk.eyJ1IjoiaW5uZXJjYWJiYWdlIiwiYSI6ImNtMmdpY3hhYzAxaXUybG40YWJsbm96cXQifQ.7nXQSw91Vd8WhZEfuiwSNA';
+
+        // Initialize Mapbox map
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [0, 0],
+            zoom: 2
+        });
+
+        const aqicnApiToken = '14f1009d49801c70f85dbefe09b36abe9b35aef4';
+        const weatherApiKey = '455df0b333d799c61f8892574dd2f210';
+
+        const weatherLayers = {
+            'temperature': `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+            'precipitation': `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`
+        };
+
+        // Toggle Weather Layer function
+        function toggleWeatherLayer(layer) {
+            if (map.getLayer('weather-layer')) {
+                map.removeLayer('weather-layer');
+                map.removeSource('weather');
+            } else {
+                map.addSource('weather', {
+                    'type': 'raster',
+                    'tiles': [weatherLayers[layer]],
+                    'tileSize': 256
+                });
+                map.addLayer({
+                    'id': 'weather-layer',
+                    'type': 'raster',
+                    'source': 'weather',
+                    'paint': { 'raster-opacity': 0.8 }
+                });
+            }
+        }
+
+        // Toggle Air Quality Layer function
+        async function toggleAirQualityLayer() {
+            try {
+                if (map.getLayer('air-quality-layer')) {
+                    map.removeLayer('air-quality-layer');
+                    map.removeSource('air-quality');
+                } else {
+                    const response = await fetch(`https://api.waqi.info/map/bounds/?token=${aqicnApiToken}&latlng=-85,-180,85,180`);
+                    const data = await response.json();
+
+                    const airQualityGeoJSON = {
+                        type: "FeatureCollection",
+                        features: data.data.map(station => ({
+                            type: "Feature",
+                            geometry: { type: "Point", coordinates: [station.lon, station.lat] },
+                            properties: { aqi: station.aqi }
+                        }))
+                    };
+
+                    map.addSource('air-quality', { type: 'geojson', data: airQualityGeoJSON });
+                    map.addLayer({
+                        'id': 'air-quality-layer',
+                        'type': 'circle',
+                        'source': 'air-quality',
+                        'paint': {
+                            'circle-radius': 8,
+                            'circle-color': 'blue',
+                            'circle-opacity': 0.8
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error("Error loading Air Quality layer:", error);
+                alert("Failed to load Air Quality data.");
+            }
+        }
+
+        // Event listeners for buttons
+        document.getElementById('temp').onclick = function () { toggleWeatherLayer('temperature'); };
+        document.getElementById('precipitation').onclick = function () { toggleWeatherLayer('precipitation'); };
+        document.getElementById('toggleAQI').onclick = toggleAirQualityLayer;
+    </script>
+</body>
+</html>
