@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Mapbox with Weather, Cell Coverage, Wildfire, BLM, USFS, and Air Quality Layers</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        .menu {
+            position: absolute;
+            background: white;
+            padding: 10px;
+            font-family: 'Arial';
+            z-index: 1;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <!-- Simple menu to switch layers -->
+    <div class="menu">
+        <button id="temp">Temperature</button>
+        <button id="precipitation">Precipitation</button>
+        <button id="clouds">Clouds</button>
+        <button id="wind">Wind</button>
+        <button id="wildfire">Wildfire</button>
+        <button id="cellCoverage">Cell Coverage</button>
+        <button id="blmLands">BLM Lands</button>
+        <button id="usfsLands">USFS Lands</button>
+        <button id="airQuality">Air Quality</button>
+    </div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiaW5uZXJjYWJiYWdlIiwiYSI6ImNtMmdpY3hhYzAxaXUybG40YWJsbm96cXQifQ.7nXQSw91Vd8WhZEfuiwSNA';
+
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [0, 0],
+            zoom: 2
+        });
+
+        var weatherApiKey = '455df0b333d799c61f8892574dd2f210';
+
+        var weatherLayers = {
+            'temperature': `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+            'precipitation': `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+            'clouds': `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+            'wind': `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`
+        };
+
+        var activeLayers = {};
+
+        function toggleWeatherLayer(layer) {
+            if (activeLayers['weather-layer']) {
+                map.removeLayer('weather-layer');
+                map.removeSource('weather');
+                activeLayers['weather-layer'] = false;
+                console.log(`Removed weather layer: ${layer}`);
+            } else {
+                map.addSource('weather', {
+                    'type': 'raster',
+                    'tiles': [weatherLayers[layer]],
+                    'tileSize': 256
+                });
+                map.addLayer({
+                    'id': 'weather-layer',
+                    'type': 'raster',
+                    'source': 'weather',
+                    'paint': { 'raster-opacity': 0.8 }
+                });
+                activeLayers['weather-layer'] = layer;
+                console.log(`Added weather layer: ${layer}`);
+            }
+        }
+
+        async function toggleLayer(name, url, color) {
+            if (activeLayers[name]) {
+                map.removeLayer(name);
+                map.removeSource(name);
+                activeLayers[name] = false;
+                console.log(`Removed layer: ${name}`);
+            } else {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`Failed to load ${name} layer`);
+                    const data = await response.json();
+                    map.addSource(name, { type: 'geojson', data: data });
+                    map.addLayer({
+                        'id': name,
+                        'type': 'fill',
+                        'source': name,
+                        'paint': {
+                            'fill-color': color,
+                            'fill-opacity': 0.4
+                        }
+                    });
+                    activeLayers[name] = true;
+                    console.log(`Added layer: ${name}`);
+                } catch (error) {
+                    console.error(`Error loading ${name} layer:`, error);
+                }
+            }
+        }
+
+        document.getElementById('temp').onclick = function () { toggleWeatherLayer('temperature'); };
+        document.getElementById('precipitation').onclick = function () { toggleWeatherLayer('precipitation'); };
+        document.getElementById('clouds').onclick = function () { toggleWeatherLayer('clouds'); };
+        document.getElementById('wind').onclick = function () { toggleWeatherLayer('wind'); };
+        document.getElementById('wildfire').onclick = function() { toggleLayer('wildfire-layer', 'https://firms.modaps.eosdis.nasa.gov/api/area/csv/de9efb7a992baa9fefc656f150b00a8f/VIIRS_SNPP_NRT/world/7/', 'red'); };
+        document.getElementById('cellCoverage').onclick = function() { toggleLayer('cell-coverage-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/cellcoverage.geojson', '#888888'); };
+        document.getElementById('blmLands').onclick = function() { toggleLayer('blm-lands-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/BLMpublicaccesslands.geojson', '#FFA500'); };
+        document.getElementById('usfsLands').onclick = function() { toggleLayer('usfs-lands-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/usfs.json', '#228B22'); };
+        document.getElementById('airQuality').onclick = function() { toggleLayer('air-quality-layer', 'https://api.waqi.info/map/bounds/?token=14f1009d49801c70f85dbefe09b36abe9b35aef4&latlng=-85,-180,85,180', 'blue'); };
+    </script>
+</body>
+</html>
