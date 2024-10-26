@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Mapbox with Weather, Cell Coverage, Wildfire, BLM, USFS, and Air Quality Layers</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        .menu {
+            position: absolute;
+            background: white;
+            padding: 10px;
+            font-family: 'Arial';
+            z-index: 1;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <!-- Simple menu to switch layers -->
+    <div class="menu">
+        <button id="temp">Temperature</button>
+        <button id="precipitation">Precipitation</button>
+        <button id="clouds">Clouds</button>
+        <button id="wind">Wind</button>
+        <button id="wildfire">Wildfire</button>
+        <button id="cellCoverage">Cell Coverage</button>
+        <button id="blmLands">BLM Lands</button> 
+        <button id="usfsLands">USFS Lands</button>
+        <button id="airQuality">Air Quality</button> <!-- Air Quality Layer Button -->
+    </div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiaW5uZXJjYWJiYWdlIiwiYSI6ImNtMmdpY3hhYzAxaXUybG40YWJsbm96cXQifQ.7nXQSw91Vd8WhZEfuiwSNA';
+
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [0, 0],
+            zoom: 2
+        });
+
+        var weatherApiKey = '455df0b333d799c61f8892574dd2f210';
+        var aqicnApiToken = '14f1009d49801c70f85dbefe09b36abe9b35aef4';
+
+        var weatherLayers = {
+            'temperature': `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+            'precipitation': `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+            'clouds': `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+            'wind': `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`
+        };
+
+        var activeLayers = {};
+
+        function toggleWeatherLayer(layer) {
+            removeActiveLayer('weather-layer');
+            addWeatherLayer(layer);
+            activeLayers['weather-layer'] = layer;
+        }
+
+        function addWeatherLayer(layer) {
+            map.addSource('weather', {
+                'type': 'raster',
+                'tiles': [weatherLayers[layer]],
+                'tileSize': 256
+            });
+            map.addLayer({
+                'id': 'weather-layer',
+                'type': 'raster',
+                'source': 'weather',
+                'paint': { 'raster-opacity': 0.8 }
+            });
+        }
+
+        function toggleWildfireLayer() {
+            removeActiveLayer('wildfire-layer');
+            fetchAndAddWildfires();
+            activeLayers['wildfire-layer'] = true;
+        }
+
+        async function fetchAndAddWildfires() {
+            const response = await fetch('https://firms.modaps.eosdis.nasa.gov/api/area/csv/de9efb7a992baa9fefc656f150b00a8f/VIIRS_SNPP_NRT/world/7/');
+            const csvText = await response.text();
+            const geojson = csvToGeoJSON(csvText);
+
+            map.addSource('wildfires', {
+                type: 'geojson',
+                data: geojson
+            });
+
+            map.addLayer({
+                'id': 'wildfire-layer',
+                'type': 'circle',
+                'source': 'wildfires',
+                'paint': {
+                    'circle-radius': 5,
+                    'circle-color': 'red',
+                    'circle-opacity': 0.8
+                }
+            });
+        }
+
+        function csvToGeoJSON(csv) {
+            const lines = csv.split('\n');
+            const features = lines.slice(1).map(line => {
+                const [latitude, longitude, brightness] = line.split(',');
+                if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
+                    return {
+                        type: 'Feature',
+                        geometry: { type: 'Point', coordinates: [parseFloat(longitude), parseFloat(latitude)] },
+                        properties: { brightness: parseFloat(brightness) }
+                    };
+                }
+            }).filter(Boolean);
+
+            return { type: 'FeatureCollection', features: features };
+        }
+
+        function toggleCellCoverageLayer() {
+            removeActiveLayer('cell-coverage-layer');
+            addCellCoverageLayer();
+            activeLayers['cell-coverage-layer'] = true;
+        }
+
+        var cellCoverageGeoJSON = 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/cellcoverage.geojson';
+
+        function addCellCoverageLayer() {
+            map.addSource('cell-coverage', {
+                'type': 'geojson',
+                'data': cellCoverageGeoJSON
+            });
+            map.addLayer({
+                'id': 'cell-coverage-layer',
+                'type': 'fill',
+                'source': 'cell-coverage',
+                'paint': { 'fill-color': '#888888', 'fill-opacity': 0.5 }
+            });
+        }
+
+        function toggleBLMLandsLayer() {
+            if (map.getLayer('blm-lands-layer')) {
+                map.removeLayer('blm-lands-layer');
+                map.removeSource('blm-lands');
+            } else {
+                addBLMLandsLayer();
+            }
+        }
+
+        async function addBLMLandsLayer() {
+            const response = await fetch('https://raw.githubusercontent.com/bencole123/mapbox-test/main/BLMpublicaccesslands.geojson');
+            const data = await response.json();
+
+            map.addSource('blm-lands', {
+                type: 'geojson',
+                data: data
+            });
+
+            map.addLayer({
+                'id': 'blm-lands-layer',
+                'type': 'fill',
+                'source': 'blm-lands',
+                'paint': {
+                    'fill-color': '#FFA500', // Orange color for BLM lands
+                    'fill-opacity': 0.4
+                }
+            });
+        }
+
+        function toggleUSFSLandsLayer() {
+            removeActiveLayer('usfs-lands-layer');
+            addUSFSLandsLayer();
+            activeLayers['usfs-lands-layer'] = true;
+        }
+
+        async function addUSFSLandsLayer() {
+            const response = await fetch('https://raw.githubusercontent.com/bencole123/mapbox-test/main/USFS.json');
+            const data = await response.json();
+
+            map.addSource('usfs-lands', {
+                type: 'geojson',
+                data: data
+            });
+
+            map.addLayer({
+                'id': 'usfs-lands-layer',
+                'type': 'fill',
+                'source': 'usfs-lands',
+                'paint': {
+                    'fill-color': '#228B22', // Forest green color for USFS lands
+                    'fill-opacity': 0.4
+                }
+            });
+        }
+
+        async function fetchAndAddAirQualityLayer() {
+            const response = await fetch(`https://api.waqi.info/map/bounds/?token=${aqicnApiToken}&latlng=-85,-180,85,180`);
+            const data = await response.json();
+
+            const airQualityGeoJSON = {
+                type: "FeatureCollection",
+                features: data.data.map(station => ({
+                    type: "Feature",
+                    geometry: { type: "Point", coordinates: [station.lon, station.lat] },
+                    properties: { aqi: station.aqi }
+                }))
+            };
+
+            map.addSource('air-quality', { type: 'geojson', data: airQualityGeoJSON });
+            map.addLayer({
+                'id': 'air-quality-layer',
+                'type': 'circle',
+                'source': 'air-quality',
+                'paint': {
+                    'circle-radius': 8,
+                    'circle-color': [
+                        'interpolate', ['linear'], ['get', 'aqi'],
+                        0, '#00e400', 50, '#ffff00', 100, '#ff7e00', 150, '#ff0000', 200, '#99004c', 300, '#7e0023'
+                    ],
+                    'circle-opacity': 0.8
+                }
+            });
+        }
+
+        document.getElementById('temp
