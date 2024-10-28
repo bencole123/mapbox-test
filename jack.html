@@ -1,0 +1,37 @@
+<script>
+  // Add the Google Air Quality heatmap layer
+  async function toggleGoogleAirQualityLayer() {
+    const googleApiKey = 'AIzaSyC958DOc8k1sggGHc21gVA7waxlC4DG5Hs';
+    
+    if (activeLayers['google-air-quality-layer']) {
+        map.removeLayer('google-air-quality-layer');
+        map.removeSource('google-air-quality');
+        activeLayers['google-air-quality-layer'] = false;
+    } else {
+        map.addSource('google-air-quality', {
+            type: 'raster',
+            tiles: [
+                `https://airquality.googleapis.com/v1/mapTypes/US_AQI/heatmapTiles/{z}/{x}/{y}?key=${googleApiKey}`
+            ],
+            tileSize: 256,
+            minzoom: 0,
+            maxzoom: 6
+        });
+
+        map.addLayer({
+            id: 'google-air-quality-layer',
+            type: 'raster',
+            source: 'google-air-quality',
+            paint: {}
+        });
+
+        activeLayers['google-air-quality-layer'] = true;
+    }
+  }
+
+  // Add a button to toggle Google Air Quality heatmap layer
+  var googleAirQualityButton = document.createElement('button');
+  googleAirQualityButton.innerHTML = 'Google Air Quality';
+  googleAirQualityButton.onclick = toggleGoogleAirQualityLayer;
+  document.querySelector('.menu').appendChild(googleAirQualityButton);
+</script>
