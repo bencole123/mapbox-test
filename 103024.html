@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Mapbox with Multiple Layers and Google Air Quality Heatmap</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.css" rel="stylesheet" />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { width: 100vw; height: 100vh; }
+        .menu {
+            position: absolute;
+            background: white;
+            padding: 10px;
+            font-family: 'Arial';
+            z-index: 1;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="menu">
+    <button id="temp">Temperature</button>
+    <button id="precipitation">Precipitation</button>
+    <button id="clouds">Clouds</button>
+    <button id="wind">Wind</button>
+    <button id="wildfire">Wildfire</button>
+    <button id="blmLands">BLM Lands</button>
+    <button id="usfsLands">USFS Lands</button>
+    <button id="airQuality">Air Quality</button>
+    <button id="earthBrightness">Earth Brightness</button>
+    <button id="tmobileBuffer">T-Mobile Buffer</button>
+    <button id="attBuffer">AT&T Buffer</button>
+    <button id="verizonBuffer">Verizon Buffer</button>
+</div>
+
+<script>
+    // API tokens
+    const mapboxToken = 'pk.eyJ1IjoiaW5uZXJjYWJiYWdlIiwiYSI6ImNtMmdpY3hhYzAxaXUybG40YWJsbm96cXQifQ.7nXQSw91Vd8WhZEfuiwSNA';
+    const googleApiKey = 'AIzaSyC958DOc8k1sggGHc21gVA7waxlC4DG5Hs';
+    const weatherApiKey = '455df0b333d799c61f8892574dd2f210';
+
+    // Initialize Mapbox
+    mapboxgl.accessToken = mapboxToken;
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [-96, 37.8], // Centered on the USA
+        zoom: 2
+    });
+
+    const activeLayers = {};
+
+    // Weather layer URLs
+    const weatherLayers = {
+        'temperature': `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+        'precipitation': `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+        'clouds': `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+        'wind': `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`
+    };
+
+    function toggleWeatherLayer(layer) {
+        if (activeLayers['weather-layer']) {
+            map.removeLayer('weather-layer');
+            map.removeSource('weather');
+            activeLayers['weather-layer'] = false;
+        } else {
+            map.addSource('weather', {
+                'type': 'raster',
+                'tiles': [weatherLayers[layer]],
+                'tileSize': 256
+            });
+            map.addLayer({
+                'id': 'weather-layer',
+                'type': 'raster',
+                'source': 'weather',
+                'paint': { 'raster-opacity': 0.8 }
+            });
+            activeLayers['weather-layer'] = layer;
+        }
+    }
+
+    // Toggle Earth Brightness Layer
+    function toggleEarthBrightness() {
+        if (activeLayers['earthBrightness-layer']) {
+            map.removeLayer('earthBrightness-layer');
+            map.removeSource('earthBrightness');
+            activeLayers['earthBrightness-layer'] = false;
+        } else {
+            map.addSource('earthBrightness', {
+                type: 'raster',
+                url: 'mapbox://innercabbage.5qk2z8qf', // Your Earth Brightness layer ID
+                tileSize: 256
+            });
+            map.addLayer({
+                id: 'earthBrightness-layer',
+                type: 'raster',
+                source: 'earthBrightness',
+                paint: { 'raster-opacity': 0.5 }
+            });
+            activeLayers['earthBrightness-layer'] = true;
+        }
+    }
+
+    // Toggle BLM and USFS layers
+    function toggleLayer(name, url, color) {
+        if (activeLayers[name]) {
+            map.removeLayer(name);
+            map.removeSource(name);
+            activeLayers[name] = false;
+        } else {
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    map.addSource(name, { type: 'geojson', data: data });
+                    map.addLayer({
+                        'id': name,
+                        'type': 'fill',
+                        'source': name,
+                        'paint': {
+                            'fill-color': color,
+                            'fill-opacity': 0.4
+                        }
+                    });
+                    activeLayers[name] = true;
+                });
+        }
+    }
+
+    function toggleGoogleAirQuality() {
+        if (activeLayers['airQuality-layer']) {
+            map.removeLayer('airQuality-layer');
+            map.removeSource('airQuality');
+            activeLayers['airQuality-layer'] = false;
+        } else {
+            map.addSource('airQuality', {
+                type: 'raster',
+                tiles: [
+                    `https://airquality.googleapis.com/v1/mapTypes/US_AQI/heatmapTiles/{z}/{x}/{y}?key=${googleApiKey}`
+                ],
+                tileSize: 256,
+                minzoom: 0,
+                maxzoom: 6
+            });
+            map.addLayer({
+                id: 'airQuality-layer',
+                type: 'raster',
+                source: 'airQuality',
+                paint: {
+                    'raster-opacity': 0.5
+                }
+            }); 
+            activeLayers['airQuality-layer'] = true;
+        }
+    }
+
+    // Event listeners for toggling layers
+    document.getElementById('temp').onclick = function () { toggleWeatherLayer('temperature'); };
+    document.getElementById('precipitation').onclick = function () { toggleWeatherLayer('precipitation'); };
+    document.getElementById('clouds').onclick = function () { toggleWeatherLayer('clouds'); };
+    document.getElementById('wind').onclick = function () { toggleWeatherLayer('wind'); };
+    document.getElementById('airQuality').onclick = toggleGoogleAirQuality;
+    document.getElementById('earthBrightness').onclick = toggleEarthBrightness;
+
+    // Toggle functions for BLM, USFS, and new buffer layers
+    document.getElementById('blmLands').onclick = function () { toggleLayer('blm-lands-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/BLMpublicaccesslands.geojson', '#FFA500'); };
+    document.getElementById('usfsLands').onclick = function () { toggleLayer('usfs-lands-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/USFS.json', '#228B22'); };
+    document.getElementById('tmobileBuffer').onclick = function () { toggleLayer('tmobileBuffer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/tmobilebuffer.json', '#FF00FF'); };
+    document.getElementById('attBuffer').onclick = function () { toggleLayer('attBuffer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/ATTBuffer.json', '#0000FF'); };
+    document.getElementById('verizonBuffer').onclick = function () { toggleLayer('verizonBuffer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/verizonbuffer.json', '#FF0000'); };
+</script>
+
+</body>
+</html>
