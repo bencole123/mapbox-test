@@ -14,26 +14,32 @@
         .menu {
             position: absolute;
             background: white;
-            padding: 10px;
+            padding: 4px;
             font-family: 'Roboto', sans-serif;
             z-index: 1;
             bottom: 20px;
             left: 20px;
-            width: 200px;
+            width: 130px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease-in-out;
+            display: none;
+        }
+
+        .menu.collapsed {
+            display: none;
         }
 
         .menu h3 {
-            font-size: 14px;
-            margin-bottom: 10px;
+            font-size: 10px;
+            margin-bottom: 3px;
             font-weight: 700;
         }
 
         .layer-option {
             display: flex;
             align-items: center;
-            padding: 6px;
+            padding: 2px 1px;
             cursor: pointer;
             border-radius: 5px;
             transition: background 0.3s;
@@ -44,9 +50,9 @@
         }
 
         .layer-icon {
-            width: 20px;
-            height: 20px;
-            margin-right: 10px;
+            width: 14px;
+            height: 14px;
+            margin-right: 2px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -55,16 +61,56 @@
         }
 
         .layer-title {
-            font-size: 11px;
+            font-size: 7px;
             font-weight: 500;
+        }
+
+        #toggle-menu {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: #0077b6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 5px;
+            cursor: pointer;
+            z-index: 2;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #hamburger {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: #0077b6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 4px;
+            cursor: pointer;
+            z-index: 2;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #hamburger span {
+            display: block;
+            width: 15px;
+            height: 2px;
+            margin: 2px auto;
+            background-color: white;
         }
     </style>
 </head>
 <body>
 
 <div id="map"></div>
-
-<div class="menu">
+<button id="hamburger">
+    <span></span>
+    <span></span>
+    <span></span>
+</button>
+<div class="menu" id="layer-menu">
     <h3>Environmental</h3>
     <div class="layer-option" id="temp">
         <div class="layer-icon" style="background: #ff8c00;">🌡️</div>
@@ -118,7 +164,7 @@
         <div class="layer-icon" style="background: #0077b6;">📶</div>
         <div class="layer-title">AT&T Coverage</div>
     </div>
-    <div class="layer-option" id="verizon">
+    <div class="layer-option" id="verizon" style="margin-bottom: 15px;">
         <div class="layer-icon" style="background: #ff0000;">📶</div>
         <div class="layer-title">Verizon Coverage</div>
     </div>
@@ -170,7 +216,7 @@
         }
     }
 
-    // Toggle NASA FIRMS Wildfire Layer
+    // Toggle Wildfire Layer
     async function toggleWildfireLayer() {
         const firmsWildfireUrl = `https://firms.modaps.eosdis.nasa.gov/usfs/api/area/csv/${firmsToken}/VIIRS_SNPP_NRT/-140,15,-50,85/1`;
         if (activeLayers['wildfire-layer']) {
@@ -341,6 +387,17 @@
     };
     document.getElementById('verizon').onclick = function () {
         toggleLayer('verizon-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/verizonbuffer.json', '#FFB6C1', 0.25);
+    };
+
+    // Hamburger button functionality
+    const hamburgerButton = document.getElementById('hamburger');
+    const layerMenu = document.getElementById('layer-menu');
+    hamburgerButton.onclick = function () {
+        if (layerMenu.style.display === 'none' || layerMenu.style.display === '') {
+            layerMenu.style.display = 'block';
+        } else {
+            layerMenu.style.display = 'none';
+        }
     };
 </script>
 
