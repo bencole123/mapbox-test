@@ -1,404 +1,461 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Mapbox with Multiple Layers and Custom UI</title>
-    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.js"></script>
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.css" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body { margin: 0; padding: 0; font-family: 'Roboto', sans-serif; }
-        #map { width: 100vw; height: 100vh; }
+  <meta charset="utf-8" />
+  <title>Mapbox with Multiple Layers and Custom UI</title>
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Roboto', sans-serif; }
+    #map { width: 100vw; height: 100vh; }
 
-        .menu {
-            position: absolute;
-            background: white;
-            padding: 4px;
-            font-family: 'Roboto', sans-serif;
-            z-index: 1;
-            bottom: 20px;
-            left: 20px;
-            width: 130px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            transition: transform 0.3s ease-in-out;
-            display: none;
-        }
+    .menu {
+      position: absolute;
+      background: white;
+      padding: 4px;
+      z-index: 1;
+      bottom: 20px;
+      left: 20px;
+      width: 130px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      display: none;
+    }
 
-        .menu.collapsed {
-            display: none;
-        }
+    .menu h3 {
+      font-size: 10px;
+      margin: 6px 0 3px 0;
+      font-weight: 700;
+    }
 
-        .menu h3 {
-            font-size: 10px;
-            margin-bottom: 3px;
-            font-weight: 700;
-        }
+    .layer-option {
+      display: flex;
+      align-items: center;
+      padding: 2px 1px;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: background 0.3s;
+      user-select: none;
+    }
 
-        .layer-option {
-            display: flex;
-            align-items: center;
-            padding: 2px 1px;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: background 0.3s;
-        }
+    .layer-option:hover { background: #f0f0f0; }
 
-        .layer-option:hover {
-            background: #f0f0f0;
-        }
+    .layer-icon {
+      width: 14px;
+      height: 14px;
+      margin-right: 4px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #e5e5e5;
+      font-size: 10px;
+      line-height: 14px;
+    }
 
-        .layer-icon {
-            width: 14px;
-            height: 14px;
-            margin-right: 2px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #e5e5e5;
-        }
+    .layer-title { font-size: 7px; font-weight: 500; }
 
-        .layer-title {
-            font-size: 7px;
-            font-weight: 500;
-        }
+    #hamburger {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: #0077b6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 7px;
+      cursor: pointer;
+      z-index: 2;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
 
-        #toggle-menu {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: #0077b6;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 5px;
-            cursor: pointer;
-            z-index: 2;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        #hamburger {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: #0077b6;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 4px;
-            cursor: pointer;
-            z-index: 2;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        #hamburger span {
-            display: block;
-            width: 15px;
-            height: 2px;
-            margin: 2px auto;
-            background-color: white;
-        }
-    </style>
+    #hamburger span {
+      display: block;
+      width: 15px;
+      height: 2px;
+      margin: 2px auto;
+      background-color: white;
+    }
+  </style>
 </head>
 <body>
 
 <div id="map"></div>
-<button id="hamburger">
-    <span></span>
-    <span></span>
-    <span></span>
+
+<button id="hamburger" aria-label="toggle layer menu">
+  <span></span>
+  <span></span>
+  <span></span>
 </button>
+
 <div class="menu" id="layer-menu">
-    <h3>Environmental</h3>
-    <div class="layer-option" id="temp">
-        <div class="layer-icon" style="background: #ff8c00;">🌡️</div>
-        <div class="layer-title">Temperature</div>
-    </div>
-    <div class="layer-option" id="precipitation">
-        <div class="layer-icon" style="background: #0077b6;">🌧️</div>
-        <div class="layer-title">Precipitation</div>
-    </div>
-    <div class="layer-option" id="clouds">
-        <div class="layer-icon" style="background: #b3cde0;">☁️</div>
-        <div class="layer-title">Clouds</div>
-    </div>
-    <div class="layer-option" id="wind">
-        <div class="layer-icon" style="background: #00b4d8;">💨</div>
-        <div class="layer-title">Wind</div>
-    </div>
-    <div class="layer-option" id="wildfire">
-        <div class="layer-icon" style="background: #d32f2f;">🔥</div>
-        <div class="layer-title">Wildfire</div>
-    </div>
-    <div class="layer-option" id="airQuality">
-        <div class="layer-icon" style="background: #7b68ee;">🌫️</div>
-        <div class="layer-title">Air Quality</div>
-    </div>
-    <div class="layer-option" id="earthBrightness">
-        <div class="layer-icon" style="background: #8b4513;">🌍</div>
-        <div class="layer-title">Dark Skies</div>
-    </div>
+  <h3>Environmental</h3>
+  <div class="layer-option" id="temp">
+    <div class="layer-icon" style="background:#ff8c00;">🌡️</div>
+    <div class="layer-title">Temperature</div>
+  </div>
+  <div class="layer-option" id="precipitation">
+    <div class="layer-icon" style="background:#0077b6;">🌧️</div>
+    <div class="layer-title">Precipitation</div>
+  </div>
+  <div class="layer-option" id="clouds">
+    <div class="layer-icon" style="background:#b3cde0;">☁️</div>
+    <div class="layer-title">Clouds</div>
+  </div>
+  <div class="layer-option" id="wind">
+    <div class="layer-icon" style="background:#00b4d8;">💨</div>
+    <div class="layer-title">Wind</div>
+  </div>
+  <div class="layer-option" id="wildfire">
+    <div class="layer-icon" style="background:#d32f2f;">🔥</div>
+    <div class="layer-title">Wildfire</div>
+  </div>
+  <div class="layer-option" id="airQuality">
+    <div class="layer-icon" style="background:#7b68ee;">🌫️</div>
+    <div class="layer-title">Air Quality</div>
+  </div>
+  <div class="layer-option" id="earthBrightness">
+    <div class="layer-icon" style="background:#8b4513;">🌍</div>
+    <div class="layer-title">Dark Skies</div>
+  </div>
 
-    <h3>Boundaries</h3>
-    <div class="layer-option" id="blmLands">
-        <div class="layer-icon" style="background: #006400;">🏜️</div>
-        <div class="layer-title">BLM Lands</div>
-    </div>
-    <div class="layer-option" id="usfsLands">
-        <div class="layer-icon" style="background: #228B22;">🌲</div>
-        <div class="layer-title">USFS Lands</div>
-    </div>
-    <div class="layer-option" id="nationalParks">
-        <div class="layer-icon" style="background: #2E8B57;">🏞️</div>
-        <div class="layer-title">National Parks</div>
-    </div>
+  <h3>Boundaries</h3>
+  <div class="layer-option" id="blmLands">
+    <div class="layer-icon" style="background:#006400;">🏜️</div>
+    <div class="layer-title">BLM Lands</div>
+  </div>
+  <div class="layer-option" id="usfsLands">
+    <div class="layer-icon" style="background:#228B22;">🌲</div>
+    <div class="layer-title">USFS Lands</div>
+  </div>
+  <div class="layer-option" id="nationalParks">
+    <div class="layer-icon" style="background:#2E8B57;">🏞️</div>
+    <div class="layer-title">National Parks</div>
+  </div>
 
-    <h3>Providers</h3>
-    <div class="layer-option" id="tmobile">
-        <div class="layer-icon" style="background: #e60073;">📶</div>
-        <div class="layer-title">T-Mobile Coverage</div>
-    </div>
-    <div class="layer-option" id="att">
-        <div class="layer-icon" style="background: #0077b6;">📶</div>
-        <div class="layer-title">AT&T Coverage</div>
-    </div>
-    <div class="layer-option" id="verizon" style="margin-bottom: 15px;">
-        <div class="layer-icon" style="background: #ff0000;">📶</div>
-        <div class="layer-title">Verizon Coverage</div>
-    </div>
+  <h3>Providers</h3>
+  <div class="layer-option" id="tmobile">
+    <div class="layer-icon" style="background:#e60073;">📶</div>
+    <div class="layer-title">T-Mobile Coverage</div>
+  </div>
+  <div class="layer-option" id="att">
+    <div class="layer-icon" style="background:#0077b6;">📶</div>
+    <div class="layer-title">AT&amp;T Coverage</div>
+  </div>
+  <div class="layer-option" id="verizon" style="margin-bottom:15px;">
+    <div class="layer-icon" style="background:#ff0000;">📶</div>
+    <div class="layer-title">Verizon Coverage</div>
+  </div>
 </div>
 
 <script>
-    // API tokens
-    const mapboxToken = 'pk.eyJ1IjoiaW5uZXJjYWJiYWdlIiwiYSI6ImNta2g5aTk2YjBpdTAzcHB1bDhkeHYyZDQifQ.7axkgY8Rg-kWFbg36mqR9w';
-    const weatherApiKey = '455df0b333d799c61f8892574dd2f210';
-    const airQualityApiKey = 'AIzaSyC958DOc8k1sggGHc21gVA7waxlC4DG5Hs';
-    const firmsToken = 'de9efb7a992baa9fefc656f150b00a8f'; // Including the FIRMS token for wildfire layer
+  const mapboxToken = 'pk.eyJ1IjoiaW5uZXJjYWJiYWdlIiwiYSI6ImNta2g5aTk2YjBpdTAzcHB1bDhkeHYyZDQifQ.7axkgY8Rg-kWFbg36mqR9w';
+  const weatherApiKey = '455df0b333d799c61f8892574dd2f210';
+  const airQualityApiKey = 'AIzaSyC958DOc8k1sggGHc21gVA7waxlC4DG5Hs';
+  const firmsToken = 'de9efb7a992baa9fefc656f150b00a8f';
 
-    // Initialize Mapbox with Light style and restricted bounds for USA and Canada
-    mapboxgl.accessToken = mapboxToken;
-    const map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/light-v10',
-        center: [-98, 38.5],
-        zoom: 3.5,
-        maxBounds: [
-            [-140, 10],
-            [-50, 85]
-        ]
+  mapboxgl.accessToken = mapboxToken;
+
+  const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/light-v10',
+    center: [-98, 38.5],
+    zoom: 3.5,
+    maxBounds: [[-140, 10], [-50, 85]]
+  });
+
+  const activeLayers = {};
+
+  function safeRemoveLayer(id) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  function safeRemoveSource(id) {
+    if (map.getSource(id)) map.removeSource(id);
+  }
+
+  async function toggleLayer(id, url, color, opacity = 0.4) {
+    const sourceId = id;
+
+    if (activeLayers[id]) {
+      safeRemoveLayer(id);
+      safeRemoveSource(sourceId);
+      activeLayers[id] = false;
+      return;
+    }
+
+    const res = await fetch(url);
+    if (!res.ok) return;
+
+    const data = await res.json();
+
+    safeRemoveLayer(id);
+    safeRemoveSource(sourceId);
+
+    map.addSource(sourceId, { type: 'geojson', data });
+    map.addLayer({
+      id,
+      type: 'fill',
+      source: sourceId,
+      paint: {
+        'fill-color': color,
+        'fill-opacity': opacity
+      }
     });
 
-    const activeLayers = {};
+    activeLayers[id] = true;
+  }
 
-    function toggleLayer(name, url, color, opacity = 0.4) {
-        if (activeLayers[name]) {
-            map.removeLayer(name);
-            map.removeSource(name);
-            activeLayers[name] = false;
-        } else {
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    map.addSource(name, { type: 'geojson', data: data });
-                    map.addLayer({
-                        'id': name,
-                        'type': 'fill',
-                        'source': name,
-                        'paint': {
-                            'fill-color': color,
-                            'fill-opacity': opacity
-                        }
-                    });
-                    activeLayers[name] = true;
-                });
+  function toggleWeatherLayer(type) {
+    const weatherUrls = {
+      temperature: `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+      precipitation: `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+      clouds: `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
+      wind: `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`
+    };
+
+    const layerId = `${type}-layer`;
+    const sourceId = `${type}`;
+
+    if (activeLayers[layerId]) {
+      safeRemoveLayer(layerId);
+      safeRemoveSource(sourceId);
+      activeLayers[layerId] = false;
+      return;
+    }
+
+    safeRemoveLayer(layerId);
+    safeRemoveSource(sourceId);
+
+    map.addSource(sourceId, {
+      type: 'raster',
+      tiles: [weatherUrls[type]],
+      tileSize: 256,
+      minzoom: 0,
+      maxzoom: 22
+    });
+
+    map.addLayer({
+      id: layerId,
+      type: 'raster',
+      source: sourceId,
+      paint: { 'raster-opacity': 0.6 }
+    });
+
+    activeLayers[layerId] = true;
+  }
+
+  function toggleAirQualityLayer() {
+    const layerId = 'airQuality-layer';
+    const sourceId = 'airQuality';
+
+    if (activeLayers[layerId]) {
+      safeRemoveLayer(layerId);
+      safeRemoveSource(sourceId);
+      activeLayers[layerId] = false;
+      return;
+    }
+
+    safeRemoveLayer(layerId);
+    safeRemoveSource(sourceId);
+
+    map.addSource(sourceId, {
+      type: 'raster',
+      tiles: [
+        `https://airquality.googleapis.com/v1/mapTypes/US_AQI/heatmapTiles/{z}/{x}/{y}?key=${airQualityApiKey}`
+      ],
+      tileSize: 256,
+      minzoom: 0,
+      maxzoom: 6
+    });
+
+    map.addLayer({
+      id: layerId,
+      type: 'raster',
+      source: sourceId,
+      paint: { 'raster-opacity': 0.5 }
+    });
+
+    activeLayers[layerId] = true;
+  }
+
+  async function fetchWildfireData(url) {
+    const response = await fetch(url);
+    const csv = await response.text();
+    return csvToGeoJSON(csv);
+  }
+
+  function csvToGeoJSON(csv) {
+    const lines = csv.trim().split('\n');
+    if (lines.length < 2) return { type: 'FeatureCollection', features: [] };
+
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const latIdx = headers.findIndex(h => h === 'latitude' || h === 'lat');
+    const lonIdx = headers.findIndex(h => h === 'longitude' || h === 'lon' || h === 'long');
+
+    const features = [];
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i].split(',');
+      const lat = row[latIdx];
+      const lon = row[lonIdx];
+      if (!lat || !lon) continue;
+      const latNum = parseFloat(lat);
+      const lonNum = parseFloat(lon);
+      if (Number.isNaN(latNum) || Number.isNaN(lonNum)) continue;
+
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [lonNum, latNum] },
+        properties: {}
+      });
+    }
+
+    return { type: 'FeatureCollection', features };
+  }
+
+  async function toggleWildfireLayer() {
+    const firmsWildfireUrl = `https://firms.modaps.eosdis.nasa.gov/usfs/api/area/csv/${firmsToken}/VIIRS_SNPP_NRT/-140,15,-50,85/1`;
+    const layerId = 'wildfire-layer';
+    const sourceId = 'wildfire';
+
+    if (activeLayers[layerId]) {
+      safeRemoveLayer(layerId);
+      safeRemoveSource(sourceId);
+      activeLayers[layerId] = false;
+      return;
+    }
+
+    try {
+      const wildfireData = await fetchWildfireData(firmsWildfireUrl);
+
+      safeRemoveLayer(layerId);
+      safeRemoveSource(sourceId);
+
+      map.addSource(sourceId, { type: 'geojson', data: wildfireData });
+      map.addLayer({
+        id: layerId,
+        type: 'circle',
+        source: sourceId,
+        paint: {
+          'circle-radius': 5,
+          'circle-color': 'orange',
+          'circle-opacity': 0.8
         }
+      });
+
+      activeLayers[layerId] = true;
+    } catch (e) {}
+  }
+
+  function toggleEarthBrightnessLayer() {
+    const layerId = 'earthBrightness-layer';
+    const sourceId = 'earthBrightness';
+
+    if (activeLayers[layerId]) {
+      map.setStyle('mapbox://styles/mapbox/light-v10');
+      activeLayers[layerId] = false;
+      return;
     }
 
-    // Toggle Wildfire Layer
-    async function toggleWildfireLayer() {
-        const firmsWildfireUrl = `https://firms.modaps.eosdis.nasa.gov/usfs/api/area/csv/${firmsToken}/VIIRS_SNPP_NRT/-140,15,-50,85/1`;
-        if (activeLayers['wildfire-layer']) {
-            if (map.getLayer('wildfire-layer')) map.removeLayer('wildfire-layer');
-            if (map.getSource('wildfire')) map.removeSource('wildfire');
-            activeLayers['wildfire-layer'] = false;
-            console.log("Wildfire layer removed");
-        } else {
-            try {
-                const wildfireData = await fetchWildfireData(firmsWildfireUrl);
-                map.addSource('wildfire', {
-                    type: 'geojson',
-                    data: wildfireData
-                });
-                map.addLayer({
-                    id: 'wildfire-layer',
-                    type: 'circle',
-                    source: 'wildfire',
-                    paint: {
-                        'circle-radius': 5,
-                        'circle-color': 'orange',
-                        'circle-opacity': 0.8
-                    }
-                });
-                activeLayers['wildfire-layer'] = true;
-                console.log("Wildfire layer added");
-            } catch (error) {
-                console.error('Error fetching wildfire data:', error);
-            }
-        }
+    map.setStyle('mapbox://styles/mapbox/dark-v10');
+    activeLayers[layerId] = true;
+  }
+
+  function rebuildActiveLayersAfterStyleChange() {
+    // re-add dark skies raster if active
+    if (activeLayers['earthBrightness-layer']) {
+      if (!map.getSource('earthBrightness')) {
+        map.addSource('earthBrightness', {
+          type: 'raster',
+          url: 'mapbox://innercabbage.5qk2z8qf',
+          tileSize: 256
+        });
+      }
+      if (!map.getLayer('earthBrightness-layer')) {
+        map.addLayer({
+          id: 'earthBrightness-layer',
+          type: 'raster',
+          source: 'earthBrightness',
+          paint: { 'raster-opacity': 0.5 }
+        });
+      }
     }
 
-    async function fetchWildfireData(url) {
-        const response = await fetch(url);
-        const csv = await response.text();
-        return csvToGeoJSON(csv);
+    // re-add weather layers if active
+    ['temperature','precipitation','clouds','wind'].forEach(t => {
+      if (activeLayers[`${t}-layer`]) {
+        activeLayers[`${t}-layer`] = false;
+        toggleWeatherLayer(t);
+      }
+    });
+
+    // re-add air quality
+    if (activeLayers['airQuality-layer']) {
+      activeLayers['airQuality-layer'] = false;
+      toggleAirQualityLayer();
     }
 
-    function csvToGeoJSON(csv) {
-        const lines = csv.split('\n');
-        const features = lines.slice(1).map(line => {
-            const [latitude, longitude, brightness] = line.split(',');
-            if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
-                return {
-                    type: 'Feature',
-                    geometry: { type: 'Point', coordinates: [parseFloat(longitude), parseFloat(latitude)] },
-                    properties: { brightness: parseFloat(brightness) }
-                };
-            }
-        }).filter(Boolean);
-        return { type: 'FeatureCollection', features: features };
+    // wildfire
+    if (activeLayers['wildfire-layer']) {
+      activeLayers['wildfire-layer'] = false;
+      toggleWildfireLayer();
     }
 
-    // Toggle Weather Layers
-    function toggleWeatherLayer(type) {
-        const weatherUrls = {
-            temperature: `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
-            precipitation: `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
-            clouds: `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`,
-            wind: `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${weatherApiKey}`
-        };
+    // geojson boundary/provider layers
+    const geo = [
+      ['blm-lands-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/BLMpublicaccesslands.geojson', '#006400', 0.4],
+      ['usfs-lands-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/USFS.json', '#00FF00', 0.4],
+      ['national-parks-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/ntlparkproj.json', '#2E8B57', 0.5],
+      ['tmobile-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/tmobilebuffer.json', '#FFC0CB', 0.25],
+      ['att-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/ATTBuffer.json', '#ADD8E6', 0.25],
+      ['verizon-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/verizonbuffer.json', '#FFB6C1', 0.25]
+    ];
+    geo.forEach(([id, url, color, op]) => {
+      if (activeLayers[id]) {
+        activeLayers[id] = false;
+        toggleLayer(id, url, color, op);
+      }
+    });
+  }
 
-        if (activeLayers[`${type}-layer`]) {
-            map.removeLayer(`${type}-layer`);
-            map.removeSource(`${type}`);
-            activeLayers[`${type}-layer`] = false;
-        } else {
-            map.addSource(`${type}`, {
-                type: 'raster',
-                tiles: [weatherUrls[type]],
-                tileSize: 256,
-                minzoom: 0,
-                maxzoom: 22
-            });
-            map.addLayer({
-                id: `${type}-layer`,
-                type: 'raster',
-                source: `${type}`,
-                paint: {
-                    'raster-opacity': 0.6
-                }
-            });
-            activeLayers[`${type}-layer`] = true;
-        }
-    }
+  map.on('style.load', () => {
+    rebuildActiveLayersAfterStyleChange();
+  });
 
-    // Toggle Air Quality Layer
-    function toggleAirQualityLayer() {
-        if (activeLayers['airQuality-layer']) {
-            map.removeLayer('airQuality-layer');
-            map.removeSource('airQuality');
-            activeLayers['airQuality-layer'] = false;
-        } else {
-            map.addSource('airQuality', {
-                type: 'raster',
-                tiles: [
-                    `https://airquality.googleapis.com/v1/mapTypes/US_AQI/heatmapTiles/{z}/{x}/{y}?key=${airQualityApiKey}`
-                ],
-                tileSize: 256,
-                minzoom: 0,
-                maxzoom: 6
-            });
-            map.addLayer({
-                id: 'airQuality-layer',
-                type: 'raster',
-                source: 'airQuality',
-                paint: {
-                    'raster-opacity': 0.5
-                }
-            });
-            activeLayers['airQuality-layer'] = true;
-        }
-    }
-
-    // Toggle Earth Brightness Layer
-    function toggleEarthBrightnessLayer() {
-        if (activeLayers['earthBrightness-layer']) {
-            map.off('style.load'); // Remove any lingering style.load event handlers
-            if (map.getLayer('earthBrightness-layer')) map.removeLayer('earthBrightness-layer');
-            if (map.getSource('earthBrightness')) map.removeSource('earthBrightness');
-            map.setStyle('mapbox://styles/mapbox/light-v10'); // Change back to light style when Earth Brightness is toggled off
-            activeLayers['earthBrightness-layer'] = false;
-        } else {
-            // Change the map style to dark when Earth Brightness layer is toggled on
-            map.setStyle('mapbox://styles/mapbox/dark-v10');
-            map.once('style.load', function () {
-                map.addSource('earthBrightness', {
-                    type: 'raster',
-                    url: 'mapbox://innercabbage.5qk2z8qf',
-                    tileSize: 256
-                });
-                map.addLayer({
-                    id: 'earthBrightness-layer',
-                    type: 'raster',
-                    source: 'earthBrightness',
-                    paint: {
-                        'raster-opacity': 0.5
-                    }
-                });
-                activeLayers['earthBrightness-layer'] = true;
-            });
-        }
-    }
-
-    // Event listeners for toggling layers
-    document.getElementById('temp').onclick = function () { toggleWeatherLayer('temperature'); };
-    document.getElementById('precipitation').onclick = function () { toggleWeatherLayer('precipitation'); };
-    document.getElementById('clouds').onclick = function () { toggleWeatherLayer('clouds'); };
-    document.getElementById('wind').onclick = function () { toggleWeatherLayer('wind'); };
+  map.on('load', () => {
+    document.getElementById('temp').onclick = () => toggleWeatherLayer('temperature');
+    document.getElementById('precipitation').onclick = () => toggleWeatherLayer('precipitation');
+    document.getElementById('clouds').onclick = () => toggleWeatherLayer('clouds');
+    document.getElementById('wind').onclick = () => toggleWeatherLayer('wind');
     document.getElementById('wildfire').onclick = toggleWildfireLayer;
     document.getElementById('airQuality').onclick = toggleAirQualityLayer;
     document.getElementById('earthBrightness').onclick = toggleEarthBrightnessLayer;
 
-    document.getElementById('blmLands').onclick = function () {
-        toggleLayer('blm-lands-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/BLMpublicaccesslands.geojson', '#006400', 0.4);
-    };
-    document.getElementById('usfsLands').onclick = function () {
-        toggleLayer('usfs-lands-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/USFS.json', '#00FF00', 0.4);
-    };
-    document.getElementById('nationalParks').onclick = function () {
-        toggleLayer('national-parks-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/ntlparkproj.json', '#2E8B57', 0.5);
-    };
-    document.getElementById('tmobile').onclick = function () {
-        toggleLayer('tmobile-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/tmobilebuffer.json', '#FFC0CB', 0.25);
-    };
-    document.getElementById('att').onclick = function () {
-        toggleLayer('att-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/ATTBuffer.json', '#ADD8E6', 0.25);
-    };
-    document.getElementById('verizon').onclick = function () {
-        toggleLayer('verizon-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/verizonbuffer.json', '#FFB6C1', 0.25);
-    };
+    document.getElementById('blmLands').onclick = () =>
+      toggleLayer('blm-lands-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/BLMpublicaccesslands.geojson', '#006400', 0.4);
 
-    // Hamburger button functionality
-    const hamburgerButton = document.getElementById('hamburger');
-    const layerMenu = document.getElementById('layer-menu');
-    hamburgerButton.onclick = function () {
-        if (layerMenu.style.display === 'none' || layerMenu.style.display === '') {
-            layerMenu.style.display = 'block';
-        } else {
-            layerMenu.style.display = 'none';
-        }
-    };
+    document.getElementById('usfsLands').onclick = () =>
+      toggleLayer('usfs-lands-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/USFS.json', '#00FF00', 0.4);
+
+    document.getElementById('nationalParks').onclick = () =>
+      toggleLayer('national-parks-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/ntlparkproj.json', '#2E8B57', 0.5);
+
+    document.getElementById('tmobile').onclick = () =>
+      toggleLayer('tmobile-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/tmobilebuffer.json', '#FFC0CB', 0.25);
+
+    document.getElementById('att').onclick = () =>
+      toggleLayer('att-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/ATTBuffer.json', '#ADD8E6', 0.25);
+
+    document.getElementById('verizon').onclick = () =>
+      toggleLayer('verizon-layer', 'https://raw.githubusercontent.com/bencole123/mapbox-test/main/verizonbuffer.json', '#FFB6C1', 0.25);
+  });
+
+  const hamburgerButton = document.getElementById('hamburger');
+  const layerMenu = document.getElementById('layer-menu');
+  hamburgerButton.onclick = () => {
+    layerMenu.style.display = (layerMenu.style.display === 'block') ? 'none' : 'block';
+  };
 </script>
 
 </body>
